@@ -5,6 +5,9 @@ from typing import Dict, Any, Optional, Tuple
 import logging
 from pathlib import Path
 
+from src.datasets.splitter import Splitter # type: ignore
+from src.datasets.feature_engineer import FeatureEngineer # type: ignore
+
 logger = logging.getLogger(__name__)
 
 class BaseDataset(Dataset):
@@ -55,6 +58,7 @@ class BaseDataset(Dataset):
             cell_line_features_path,
             n_cell_line_components
         )
+        print(self.cell_line_features)
 
         logger.info(f"Loaded {len(self.df)} samples for subset '{self.subset}'")
 
@@ -125,12 +129,16 @@ class BaseDataset(Dataset):
         scaler = StandardScaler()
         expr_scaled = scaler.fit_transform(expr_df)
 
-        pca = PCA(n_components=n_components)
+        max_comp = min(expr_scaled.shape[0], expr_scaled.shape[1])
+        n_comp = int(n_components) if n_components is not None else max_comp
+        n_comp = max(1, min(n_comp, max_comp))
+
+        pca = PCA(n_components=n_comp)
         cell_emb = pca.fit_transform(expr_scaled)
 
         cell_names = expr_df.index.tolist()
         return {
-            cell: torch.tensor(emb, dtype=torch.float32) 
+            cell: torch.as_tensor(emb, dtype=torch.float32)
             for cell, emb in zip(cell_names, cell_emb)
         }
     
@@ -145,16 +153,19 @@ class BaseDataset(Dataset):
         """
         Returns metadata for the sample at the given index.
         """
+        print(self.df)
         row = self.df.iloc[idx]
         metadata = {
             'ID': row['ID'],
             'Drug1': row['Drug1'],
             'Drug2': row['Drug2'],
-            'Cell line': row['Cell line'],
+            'cell_line': row['Cell line'],
             'ZIP': row['ZIP'],
             'Bliss': row.get('Bliss', None),
             'Loewe': row.get('Loewe', None),
-            'HSA': row.get('HSA', None)
+            'HSA': row.get('HSA', None),
+            'smiles1': row['smiles_drug1'],
+            'smiles2': row['smiles_drug2']
         }
         return metadata
     

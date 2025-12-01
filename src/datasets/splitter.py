@@ -25,15 +25,14 @@ class Splitter:
         self.seed = seed
         self._splits_cache = {}
 
-    @lru_cache(maxsize=None)
-    def split(self, df: pd.DataFrame) -> Tuple[pd.Index, pd.Index, pd.Index]:
+    def split(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Splits the DataFrame into train, validation, and test sets.
 
         Args:
             df (pd.DataFrame): The full dataset.
         Returns:
-            Tuple[pd.Index, pd.Index, pd.Index]: Indices for train, val,
+            Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: DataFrames for train, val,
             and test sets.
         """
         if self.strategy == 'random':
@@ -74,6 +73,7 @@ class Splitter:
 
         all_drugs = set(df['Drug1'].unique()) | set(df['Drug2'].unique())
         test_drugs = set(np.random.choice(list(all_drugs), size=int(0.1 * len(all_drugs)), replace=False))
+        print(test_drugs)
 
         # Test: any pair containing a test drug
         test_mask = df['Drug1'].isin(test_drugs) | df['Drug2'].isin(test_drugs)
